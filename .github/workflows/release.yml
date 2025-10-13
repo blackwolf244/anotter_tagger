@@ -1,0 +1,56 @@
+name: Release Obsidian Plugin
+
+on:
+    push:
+        branches:
+            - main
+        paths-ignore:
+            - ".github/**"
+            - "manifest.json"
+            - "versions.json"
+            - "package.json"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "18"
+                  cache: "npm"
+
+            - name: Install Dependencies
+              run: npm install
+
+            - name: Configure Git
+              run: |
+                  git config user.name 'GitHub Actions Bot'
+                  git config user.email 'actions@github.com'
+
+            - name: Bump Version
+              run: |
+                  npm version patch -no-git-tag-version
+                  git add package.json manifest.json versions.json
+                  version=$(node -p "require('./package.json').version")
+                  git commit -m "chore: release version $version"
+                  git tag $version
+                  git push --tags
+
+            - name: Build Plugin
+              run: npm run build
+
+            - name: Create Release
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  version=$(node -p "require('./package.json').version")
+                  gh release create "$version" \
+                    --title="Version $version" \
+                    --draft=false \
+                    main.js \
+                    manifest.json \
+                    styles.css

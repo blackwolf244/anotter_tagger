@@ -1,0 +1,44 @@
+name: Auto Version Bump
+
+on:
+    push:
+        branches:
+            - main
+            - master
+        paths-ignore:
+            - "manifest.json"
+            - "versions.json"
+            - "package.json"
+
+jobs:
+    bump-version:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  token: ${{ secrets.GH_PAT }} # Need a custom PAT to trigger subsequent workflows
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "18"
+                  cache: "npm"
+
+            - name: Configure Git
+              run: |
+                  git config user.name 'GitHub Actions Bot'
+                  git config user.email 'actions@github.com'
+
+            - name: Install Dependencies
+              run: npm install
+
+            - name: Bump Patch Version
+              run: |
+                  npm version patch -no-git-tag-version
+
+            - name: Commit and Push
+              run: |
+                  git add package.json manifest.json versions.json
+                  git commit -m "chore: auto bump version [skip-version]"
+                  git push
