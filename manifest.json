@@ -1,0 +1,11 @@
+{
+	"id": "tf-idf-tagger",
+	"name": "Anotter Tagger",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Automatically tags notes using TF-IDF.",
+	"author": "Your Name",
+	"authorUrl": "",
+	"fundingUrl": "",
+	"isDesktopOnly": false
+}
