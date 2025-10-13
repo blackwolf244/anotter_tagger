@@ -3,12 +3,9 @@ name: Release Obsidian Plugin
 on:
     push:
         branches:
-            - main
+            - master
         paths-ignore:
             - ".github/**"
-            - "manifest.json"
-            - "versions.json"
-            - "package.json"
 
 permissions:
     contents: write
@@ -38,14 +35,14 @@ jobs:
                   git config user.name 'GitHub Actions Bot'
                   git config user.email 'actions@github.com'
 
-            - name: Bump Version
+            - name: Bump Version and Push
               run: |
                   npm version patch -no-git-tag-version
                   git add package.json manifest.json versions.json
                   version=$(node -p "require('./package.json').version")
                   git commit -m "chore: release version $version"
                   git tag $version
-                  git push --tags
+                  git push && git push --tags
 
             - name: Build Plugin
               run: npm run build
