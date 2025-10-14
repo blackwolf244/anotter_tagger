@@ -10,6 +10,8 @@ export interface TfidfTaggerSettings {
 	stopWords: string;
 	languages: string; // Comma-separated ISO language codes for stopwords
 	automaticTagging: boolean;
+	prioritizeExistingTags: boolean;
+	existingTagPriority: number;
 }
 
 export const DEFAULT_SETTINGS: TfidfTaggerSettings = {
@@ -19,8 +21,10 @@ export const DEFAULT_SETTINGS: TfidfTaggerSettings = {
 	useIsoStopWords: true,
 	customStopWords: '',
 	stopWords: "a,able,about,across,after,all,almost,also,am,among,an,and,any,are,as,at,be,because,been,but,by,can,cannot,could,dear,did,do,does,either,else,ever,every,for,from,get,got,had,has,have,he,her,hers,him,his,how,however,i,if,in,into,is,it,its,just,least,let,like,likely,may,me,might,most,must,my,neither,no,nor,not,of,off,often,on,only,or,other,our,own,rather,said,say,says,she,should,since,so,some,than,that,the,their,them,then,there,these,they,this,tis,to,too,twas,us,wants,was,we,were,what,when,where,which,while,who,whom,why,will,with,would,yet,you,your",
-	languages: 'en', // Default to English
+	languages: 'en,de,fr', // Default to English
 	automaticTagging: true,
+	prioritizeExistingTags: true,
+	existingTagPriority: 5,
 };
 
 export class TfidfTaggerSettingTab extends PluginSettingTab {
@@ -49,6 +53,27 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 		];
 		const randomQuote = otterQuotes[Math.floor(Math.random() * otterQuotes.length)];
 		containerEl.createEl('div', { text: `"${randomQuote}"`, cls: 'otter-quote' });
+
+		new Setting(containerEl)
+			.setName('Prioritize Existing Tags')
+			.setDesc('Should I give more weight to tags that already exist in your vault?')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.prioritizeExistingTags)
+				.onChange(async (value) => {
+					this.plugin.settings.prioritizeExistingTags = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Existing Tag Priority')
+			.setDesc('How much more weight should I give to existing tags? (1 = no boost, 5 = default boost)')
+			.addText(text => text
+				.setPlaceholder('Enter the priority')
+				.setValue(this.plugin.settings.existingTagPriority.toString())
+				.onChange(async (value) => {
+					this.plugin.settings.existingTagPriority = parseInt(value, 10);
+					await this.plugin.saveSettings();
+				}));
 
 		new Setting(containerEl)
 			.setName('Automatic Tagging')

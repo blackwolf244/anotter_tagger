@@ -19,7 +19,7 @@ export default class TfidfTagger extends Plugin {
 
 		this.tagger = new TfidfTaggerImpl(this);
 
-		this.rebuildCortex();
+		this.saveSettings()
 
 		this.addSettingTab(new TfidfTaggerSettingTab(this.app, this));
 

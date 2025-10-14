@@ -70,6 +70,17 @@ export class TfidfTaggerImpl {
 			// NOTE: The problematic line 'this.tfidf.addDocument(content);' is removed here.
 		}
 
+		if (this.plugin.settings.prioritizeExistingTags) {
+			const existingTagsWithCounts: Record<string, number> = (this.plugin.app.metadataCache as any).getTags();
+			const existingTags = Object.keys(existingTagsWithCounts).map(tag => tag.substring(1)); // remove leading #
+
+			terms.forEach(term => {
+				if (existingTags.includes(term.term)) {
+					term.tfidf *= this.plugin.settings.existingTagPriority;
+				}
+			});
+		}
+
 		const tags = terms
 			.sort((a, b) => b.tfidf - a.tfidf)
 			.slice(0, this.plugin.settings.numTags)
