@@ -1,6 +1,6 @@
 {
 	"name": "anotter-tagger",
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"description": "Automatically tags notes using TF-IDF.",
 	"main": "main.js",
 	"scripts": {
