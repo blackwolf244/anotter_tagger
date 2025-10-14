@@ -15,8 +15,10 @@ export class TfidfTaggerImpl {
 		this.filePaths = [];
 	}
 
-	async rebuildCortex() {
-		new Notice('Gathering all the pebbles, this might take a moment...');
+	async rebuildCortex(silent = false) {
+		if (!silent) {
+			new Notice('Gathering all the pebbles, this might take a moment...');
+		}
 		this.tfidfCore = new TfIdfCore(); // Re-initialize the core
 		this.filePaths = [];
 		const files = await this.plugin.getCortexFiles();
@@ -28,7 +30,9 @@ export class TfidfTaggerImpl {
 			this.filePaths.push(file.path);
 		}
 
-		new Notice("I've learned from all the pebbles!");
+		if (!silent) {
+			new Notice("I've learned from all the pebbles!");
+		}
 	}
 
 	async tagNote(file: TFile) {

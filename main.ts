@@ -19,6 +19,8 @@ export default class TfidfTagger extends Plugin {
 
 		this.tagger = new TfidfTaggerImpl(this);
 
+		this.rebuildCortex();
+
 		this.addSettingTab(new TfidfTaggerSettingTab(this.app, this));
 
 		this.addCommand({
@@ -110,6 +112,7 @@ export default class TfidfTagger extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 		this.updateStopWords();
+		this.rebuildCortex(true);
 	}
 
 	updateStopWords() {
@@ -134,8 +137,8 @@ export default class TfidfTagger extends Plugin {
 		this.settings.stopWords = stopWords.join(',');
 	}
 
-	rebuildCortex() {
-		this.tagger.rebuildCortex();
+	rebuildCortex(silent = false) {
+		this.tagger.rebuildCortex(silent);
 	}
 
 	tagAllNotes() {

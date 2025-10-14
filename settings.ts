@@ -61,11 +61,11 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Stopword Languages')
-			.setDesc('Comma-separated ISO codes for stopword languages (e.g., en,de,fr), for me to keep in mind.')
+			.setName('Stopword Lists')
+			.setDesc('Comma-separated ISO codes for stopword lists that I should use (e.g., en,de,fr)')
 			.addText(text => text
 				.setPlaceholder('en,de,fr')
-				.setValue(this.plugin.settings.languages || 'en')
+				.setValue(this.plugin.settings.languages || 'en,de,fr')
 				.onChange(async (value) => {
 					this.plugin.settings.languages = value
 						.split(',')
