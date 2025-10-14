@@ -39,6 +39,20 @@ export default class TfidfTagger extends Plugin {
 			},
 		});
 
+		this.addCommand({
+			id: 'tag-active-note',
+			name: 'Tag Active Note',
+			callback: async () => {
+				const activeFile = this.app.workspace.getActiveFile();
+				if (activeFile) {
+					new Notice("🦦 Tagging this note for you!");
+					await this.tagger.tagNote(activeFile);
+				} else {
+					new Notice("🦦 Please select a note to tag!");
+				}
+			},
+		});
+
 		this.registerEvent(
 			this.app.workspace.on('file-menu', (menu, file) => {
 				if (file instanceof TFile) {
@@ -56,7 +70,7 @@ export default class TfidfTagger extends Plugin {
 
 		this.registerEvent(
 			this.app.vault.on('modify', (file) => {
-				if (file instanceof TFile) {
+				if (this.settings.automaticTagging && file instanceof TFile) {
 					clearTimeout(this.debounceTimer);
 					this.debounceTimer = setTimeout(() => {
 						this.tagger.tagNote(file);
