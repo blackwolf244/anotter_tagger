@@ -38,7 +38,12 @@ export class TfidfTaggerImpl {
 	async tagNote(file: TFile) {
 		// Use the utility method to check if corpus is empty
 		if (this.tfidfCore.isCorpusEmpty()) {
-			new Notice('My pebble collection is empty! Please rebuild it in the settings.');
+			new Notice('My pebble collection is empty! Checking...');
+			await this.rebuildCortex(true);
+			if (this.tfidfCore.isCorpusEmpty()) {
+				new Notice('Still empty! Please rebuild it in the settings.');
+				return;
+			}
 			return;
 		}
 
@@ -97,7 +102,12 @@ export class TfidfTaggerImpl {
 	async tagAllNotes() {
 		// Use the utility method to check if corpus is empty
 		if (this.tfidfCore.isCorpusEmpty()) {
-			new Notice('My pebble collection is empty! Please rebuild it in the settings.');
+			new Notice('My pebble collection is empty! Checking...');
+			await this.rebuildCortex(true);
+			if (this.tfidfCore.isCorpusEmpty()) {
+				new Notice('Still empty! Please rebuild it in the settings.');
+				return;
+			}
 			return;
 		}
 
