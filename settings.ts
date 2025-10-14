@@ -61,6 +61,16 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
+			.setName('Use ISO Stop Words')
+			.setDesc('Words to ignore when I look for the interesting bits!')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.useIsoStopWords)
+				.onChange(async (value) => {
+					this.plugin.settings.useIsoStopWords = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
 			.setName('Stopword Lists')
 			.setDesc('Comma-separated ISO codes for stopword lists that I should use (e.g., en,de,fr)')
 			.addText(text => text
@@ -72,6 +82,28 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 						.map(l => l.trim().toLowerCase())
 						.filter(Boolean)
 						.join(',');
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Number of Tags')
+			.setDesc("How many tags should I fetch for you?")
+			.addText(text => text
+				.setPlaceholder('Enter the number of tags')
+				.setValue(this.plugin.settings.numTags.toString())
+				.onChange(async (value) => {
+					this.plugin.settings.numTags = parseInt(value, 10);
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Custom Stop Words')
+			.setDesc('A comma-separated list of words to ignore when tagging.')
+			.addTextArea(text => text
+				.setPlaceholder('Enter comma-separated stop words')
+				.setValue(this.plugin.settings.customStopWords)
+				.onChange(async (value) => {
+					this.plugin.settings.customStopWords = value;
 					await this.plugin.saveSettings();
 				}));
 
@@ -102,38 +134,6 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			.setName('Number of Tags')
-			.setDesc("How many tags should I fetch for you?")
-			.addText(text => text
-				.setPlaceholder('Enter the number of tags')
-				.setValue(this.plugin.settings.numTags.toString())
-				.onChange(async (value) => {
-					this.plugin.settings.numTags = parseInt(value, 10);
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Use ISO Stop Words')
-			.setDesc('Words to ignore when I look for the interesting bits!')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useIsoStopWords)
-				.onChange(async (value) => {
-					this.plugin.settings.useIsoStopWords = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
-			.setName('Custom Stop Words')
-			.setDesc('A comma-separated list of words to ignore when tagging.')
-			.addTextArea(text => text
-				.setPlaceholder('Enter comma-separated stop words')
-				.setValue(this.plugin.settings.customStopWords)
-				.onChange(async (value) => {
-					this.plugin.settings.customStopWords = value;
-					await this.plugin.saveSettings();
-				}));
-
-		new Setting(containerEl)
 			.setName('Rebuild Pebble Collection')
 			.setDesc("Click here to have me re-organize my pebble collection (the index). It might take a moment!")
 			.addButton(button => button
@@ -144,7 +144,7 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Tag All Pebbles')
-			.setDesc("I'll go through all your pebbles and give them the tags they deserve!")
+			.setDesc("Only click me if you really want me to tag every single one of your notes! It might take a while...")
 			.addButton(button => button
 				.setButtonText('Apply and Update')
 				.onClick(() => {
