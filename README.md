@@ -1,66 +1,64 @@
-# Anotter Tagger - TF-IDF Tagging for Obsidian
+# Anotter Tagger
 
-This is an Obsidian plugin that brings intelligent, otter-inspired automated tagging to your notes using TF-IDF (Term Frequency-Inverse Document Frequency) analysis. This plugin helps you maintain a consistent and meaningful tagging system by suggesting relevant tags based on the content of your notes.
+Anotter Tagger is an Obsidian plugin to automatically tag notes. It analyzes note content to suggest and apply relevant tags, helping to organize your knowledge base efficiently.
+
+The plugin offers two tagging engines, TF-IDF and local AI via Ollama, to provide flexible and accurate tag generation.
 
 ## Features
 
--   Automated tag suggestions using TF-IDF analysis
--   Smart tag recommendations based on note content
--   Customizable tagging preferences
--   Otter-inspired UI elements for a playful experience
--   Multi-language support for stopwords filtering
+- **Automatic Tagging**: Automatically applies tags when a note is saved.
+- **Dual Tagging Engines**:
+    - **TF-IDF**: A classic, fast, and reliable keyword-extraction method that works offline.
+    - **Ollama AI**: Utilizes local Large Language Models (LLMs) via Ollama for intelligent, context-aware tagging.
+- **Silent Fallback**: If Ollama is enabled but unavailable, the tagger seamlessly falls back to the built-in TF-IDF engine.
+- **Configurable Scope**: Configure the tagger to learn from your entire vault or a specific folder.
+- **Manual Control**: Tag individual notes on-demand via the file menu or command palette.
+- **Multi-Language Support**: Improves tag quality by using stopword lists for multiple languages (defaults to English, German, and French).
+- **Customizable**: Fine-tune everything from the number of tags to the AI's behavior.
 
-## First time developing plugins?
+## How It Works
 
-Quick starting guide for new plugin devs:
+Anotter Tagger uses two distinct methods to generate tags:
 
--   Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
--   Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
--   Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
--   Install NodeJS, then run `npm i` in the command line under your repo folder.
--   Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
--   Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
--   Reload Obsidian to load the new version of your plugin.
--   Enable plugin in settings window.
--   For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+1.  **TF-IDF (Term Frequency-Inverse Document Frequency)**: The default method. The tagger builds a vocabulary from all notes within its configured scope. It then identifies words that are significant to a specific note but not overly common across all notes, making them ideal tag candidates.
 
-## Releasing new releases
+2.  **Ollama AI Tagging**: If you have [Ollama](https://ollama.com/) running locally, you can enable this mode. The plugin sends the note content to your local LLM, which generates a list of relevant tags based on its contextual understanding of the text. This allows for more conceptual and nuanced tagging.
 
--   Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
--   Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
--   Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
--   Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
--   Publish the release.
+When Ollama is enabled, it is the primary provider. If it fails for any reason (e.g., the server is down), the plugin automatically and silently falls back to using the TF-IDF method for that request.
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+## Settings
 
-## Adding your plugin to the community plugin list
+The plugin's behavior can be configured through the settings panel.
 
--   Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
--   Publish an initial version.
--   Make sure you have a `README.md` file in the root of your repo.
--   Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### Core Actions
 
-## How to use
+- **Rebuild Cortex**: Re-scans all notes to update the tagger's internal vocabulary.
+- **Tag All Notes**: Applies tags to all notes in the vault based on the current settings.
 
-1. Install the plugin from Obsidian's Community Plugins
-2. Enable the plugin in Settings → Community Plugins
-3. Open any note you want to tag
-4. Edit your note, once obsidian saves your file, you'll find a few new tags added to it.
+### Tagging Options
 
-## Configuration
+- **Automatic Tagging**: Toggle whether notes are tagged automatically on save.
+- **Existing Tag Priority**: Apply a weight to words that are already tags in your vault, increasing their likelihood of being chosen.
+- **Stopword Lists**: Define which language stopword lists to use (e.g., `en,de,fr`). Stopwords are common words that are ignored to improve tag quality.
+- **Number of Tags**: Set the maximum number of tags to generate for each note.
+- **Custom Stop Words**: Provide a comma-separated list of additional words to ignore during tagging.
+- **Reference Source**: Choose whether the tagger should learn from the **Entire Vault** or a **Specific Folder**.
 
-You can customize the plugin's behavior in the settings tab:
+### Ollama AI Tagging
 
--   Adjust the minimum word frequency threshold
--   Set maximum number of tags per document
--   Customize tag prefix/suffix
--   Enable/disable automatic tagging
+- **Enable Ollama**: Use a local Ollama LLM as the primary tag provider.
+- **Server URL**: The base URL of your Ollama server (e.g., `http://localhost:11434`).
+- **Model**: Select which Ollama model to use for tagging.
+- **Temperature**: Controls the creativity of the AI. Lower values (e.g., 0.2) are more deterministic, while higher values (e.g., 1.0) are more creative.
+- **Custom prompt**: Override the default system prompt to fine-tune the AI's behavior. Use `{numTags}`, `{existingTags}`, and `{noteContent}` as placeholders.
 
-## Acknowledgments
+## Commands
 
-This plugin uses the stopwords list from [stopwords-iso](https://github.com/stopwords-iso/stopwords-iso), a comprehensive collection of stopwords for multiple languages. We appreciate their work in maintaining this valuable resource.
+- **Rebuild Cortex**: Re-indexes the vocabulary from your notes.
+- **Tag All Notes**: Iterates through and tags all notes in your vault.
+- **Tag Active Note**: Tags the currently open note.
+- You can also **right-click on a file** in the file explorer and select "Tag Note" from the context menu.
 
--   `npm i` or `yarn` to install dependencies.
--   `npm run dev` to start compilation in watch mode.
+---
+
+Made with care by your significant otter.
