@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import TfidfTagger from './main';
+import { fetchModels } from './OllamaClient';
 
 export interface TfidfTaggerSettings {
 	cortexSource: 'vault' | 'folder';
@@ -12,6 +13,12 @@ export interface TfidfTaggerSettings {
 	automaticTagging: boolean;
 	prioritizeExistingTags: boolean;
 	existingTagPriority: number;
+	// Ollama provider settings
+	ollamaEnabled: boolean;
+	ollamaServerUrl: string;
+	ollamaModel: string;
+	ollamaTemperature: number;
+	ollamaCustomPrompt: string;
 }
 
 export const DEFAULT_SETTINGS: TfidfTaggerSettings = {
@@ -25,6 +32,12 @@ export const DEFAULT_SETTINGS: TfidfTaggerSettings = {
 	automaticTagging: true,
 	prioritizeExistingTags: true,
 	existingTagPriority: 5,
+	// Ollama defaults
+	ollamaEnabled: false,
+	ollamaServerUrl: 'http://localhost:11434',
+	ollamaModel: '',
+	ollamaTemperature: 0.3,
+	ollamaCustomPrompt: '',
 };
 
 export class TfidfTaggerSettingTab extends PluginSettingTab {
@@ -158,6 +171,104 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 					}));
 		}
 
+		// ---- Ollama AI Tagging section ----
+		containerEl.createEl('h2', { text: 'Ollama AI tagging' });
+		containerEl.createEl('p', {
+			text: 'Use a local Ollama LLM to generate tags instead of TF-IDF. When enabled and reachable the LLM generates tags; otherwise I silently fall back to TF-IDF.',
+			cls: 'setting-item-description',
+		});
+
+		new Setting(containerEl)
+			.setName('Enable Ollama')
+			.setDesc('Use Ollama as the primary tag provider (falls back to TF-IDF on failure).')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.ollamaEnabled)
+				.onChange(async (value) => {
+					this.plugin.settings.ollamaEnabled = value;
+					await this.plugin.saveSettings();
+					this.display(); // re-render to show/hide Ollama settings
+				}));
+
+		if (this.plugin.settings.ollamaEnabled) {
+			new Setting(containerEl)
+				.setName('Server URL')
+				.setDesc('Base URL of the Ollama server.')
+				.addText(text => text
+					.setPlaceholder('http://localhost:11434')
+					.setValue(this.plugin.settings.ollamaServerUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.ollamaServerUrl = value;
+						await this.plugin.saveSettings();
+					}));
+
+			// Model dropdown -- populated dynamically
+			const modelSetting = new Setting(containerEl)
+				.setName('Model')
+				.setDesc('Select which Ollama model to use for tagging.');
+
+			modelSetting.addDropdown(async (dropdown) => {
+				dropdown.addOption('', 'Loading models...');
+				dropdown.setDisabled(true);
+
+				const models = await fetchModels(this.plugin.settings.ollamaServerUrl);
+				// Clear placeholder
+				dropdown.selectEl.empty();
+
+				if (models.length === 0) {
+					dropdown.addOption('', 'Could not connect to Ollama');
+					dropdown.setDisabled(true);
+				} else {
+					dropdown.setDisabled(false);
+					for (const model of models) {
+						dropdown.addOption(model, model);
+					}
+					if (this.plugin.settings.ollamaModel && models.includes(this.plugin.settings.ollamaModel)) {
+						dropdown.setValue(this.plugin.settings.ollamaModel);
+					} else if (models.length > 0) {
+						dropdown.setValue(models[0]);
+						this.plugin.settings.ollamaModel = models[0];
+						await this.plugin.saveSettings();
+					}
+					dropdown.onChange(async (value) => {
+						this.plugin.settings.ollamaModel = value;
+						await this.plugin.saveSettings();
+					});
+				}
+			});
+
+			modelSetting.addButton(button => button
+				.setButtonText('Refresh')
+				.onClick(() => {
+					this.display();
+				}));
+
+			new Setting(containerEl)
+				.setName('Temperature')
+				.setDesc('Controls randomness (0.0 = deterministic, 1.0 = creative). Default 0.3.')
+				.addText(text => text
+					.setPlaceholder('0.3')
+					.setValue(this.plugin.settings.ollamaTemperature.toString())
+					.onChange(async (value) => {
+						const num = parseFloat(value);
+						if (!isNaN(num) && num >= 0 && num <= 1) {
+							this.plugin.settings.ollamaTemperature = num;
+							await this.plugin.saveSettings();
+						}
+					}));
+
+			new Setting(containerEl)
+				.setName('Custom prompt')
+				.setDesc('Override the default system prompt. Use {numTags}, {existingTags}, and {noteContent} as placeholders.')
+				.addTextArea(text => text
+					.setPlaceholder('Leave empty to use the default prompt')
+					.setValue(this.plugin.settings.ollamaCustomPrompt)
+					.onChange(async (value) => {
+						this.plugin.settings.ollamaCustomPrompt = value;
+						await this.plugin.saveSettings();
+					}));
+		}
+
+		// ---- Actions section ----
 		new Setting(containerEl)
 			.setName('Rebuild Pebble Collection')
 			.setDesc("Click here to have me re-organize my pebble collection (the index). It might take a moment!")

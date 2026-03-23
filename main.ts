@@ -1,6 +1,7 @@
 import { App, Plugin, TFile, TFolder, Notice } from 'obsidian';
 import { TfidfTaggerSettings, DEFAULT_SETTINGS, TfidfTaggerSettingTab } from './settings';
 import { TfidfTaggerImpl } from './TfidfTaggerImpl';
+import { OllamaTaggerImpl } from './OllamaTaggerImpl';
 import stopwordsJson from './stopwords-iso.json';
 // stopwords-iso.json has the shape { [lang: string]: string[] }
 interface StopwordsMap {
@@ -11,6 +12,7 @@ const stopwords: StopwordsMap = stopwordsJson as unknown as StopwordsMap;
 export default class TfidfTagger extends Plugin {
 	settings: TfidfTaggerSettings;
 	tagger: TfidfTaggerImpl;
+	ollamaTagger: OllamaTaggerImpl;
 	private debounceTimer: NodeJS.Timeout;
 
 	async onload() {
@@ -18,6 +20,7 @@ export default class TfidfTagger extends Plugin {
 		this.updateStopWords();
 
 		this.tagger = new TfidfTaggerImpl(this);
+		this.ollamaTagger = new OllamaTaggerImpl(this);
 
 		this.saveSettings()
 
@@ -48,7 +51,7 @@ export default class TfidfTagger extends Plugin {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile) {
 					new Notice("🦦 Tagging this note for you!");
-					await this.tagger.tagNote(activeFile);
+					await this.tagWithProvider(activeFile);
 				} else {
 					new Notice("🦦 Please select a note to tag!");
 				}
@@ -63,7 +66,7 @@ export default class TfidfTagger extends Plugin {
 							.setTitle('Tag Note')
 							.setIcon('tag')
 							.onClick(() => {
-								this.tagger.tagNote(file);
+								this.tagWithProvider(file);
 							});
 					});
 				}
@@ -75,11 +78,31 @@ export default class TfidfTagger extends Plugin {
 				if (this.settings.automaticTagging && file instanceof TFile) {
 					clearTimeout(this.debounceTimer);
 					this.debounceTimer = setTimeout(() => {
-						this.tagger.tagNote(file);
+						this.tagWithProvider(file);
 					}, 1000);
 				}
 			})
 		);
+	}
+
+	/**
+	 * Route a single-file tag request through Ollama (if enabled and working)
+	 * with a silent fallback to TF-IDF.
+	 */
+	async tagWithProvider(file: TFile): Promise<void> {
+		if (this.settings.ollamaEnabled && this.settings.ollamaModel) {
+			try {
+				const tags = await this.ollamaTagger.tagNote(file);
+				if (tags && tags.length > 0) {
+					await this.ollamaTagger.writeTags(file, tags);
+					return;
+				}
+			} catch {
+				// Ollama failed -- fall through to TF-IDF silently
+			}
+		}
+		// Fallback to TF-IDF
+		await this.tagger.tagNote(file);
 	}
 
 	async getCortexFiles(): Promise<TFile[]> {
@@ -141,7 +164,12 @@ export default class TfidfTagger extends Plugin {
 		this.tagger.rebuildCortex(silent);
 	}
 
-	tagAllNotes() {
-		this.tagger.tagAllNotes();
+	async tagAllNotes() {
+		if (this.settings.ollamaEnabled && this.settings.ollamaModel) {
+			const files = this.app.vault.getMarkdownFiles();
+			await this.ollamaTagger.tagAllNotes(files);
+		} else {
+			await this.tagger.tagAllNotes();
+		}
 	}
 }
