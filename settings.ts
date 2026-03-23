@@ -53,9 +53,6 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-
-		containerEl.createEl('h2', { text: '🦦 Anotter Tagger Settings' });
-
 		// Otter quotes
 		const otterQuotes = [
 			"You're otterly amazing!",
@@ -65,28 +62,39 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 			"Keep calm and otter on."
 		];
 		const randomQuote = otterQuotes[Math.floor(Math.random() * otterQuotes.length)];
-		containerEl.createEl('div', { text: `"${randomQuote}"`, cls: 'otter-quote' });
+		containerEl.createEl('h1', { text: `"${randomQuote}"`, cls: 'otter-quote' });
+
+		// ---- Actions section ----
+		containerEl.createEl('h2', { text: 'Actions' });
+		containerEl.createEl('p', {
+			text: 'Use those actions whenever you want to refresh my memory or do some big changes to your vault. I will silently update my index (the cortex) in the background, so you can keep working while I do my thing.',
+			cls: 'setting-item-description',
+		});
 
 		new Setting(containerEl)
-			.setName('Prioritize Existing Tags')
-			.setDesc('Should I give more weight to tags that already exist in your vault?')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.prioritizeExistingTags)
-				.onChange(async (value) => {
-					this.plugin.settings.prioritizeExistingTags = value;
-					await this.plugin.saveSettings();
+			.setName('Rebuild Pebble Collection')
+			.setDesc("Click here to have me re-organize my pebble collection (the index). It might take a moment!")
+			.addButton(button => button
+				.setButtonText('Rebuild')
+				.onClick(() => {
+					this.plugin.rebuildCortex();
 				}));
 
 		new Setting(containerEl)
-			.setName('Existing Tag Priority')
-			.setDesc('How much more weight should I give to existing tags? (1 = no boost, 5 = default boost)')
-			.addText(text => text
-				.setPlaceholder('Enter the priority')
-				.setValue(this.plugin.settings.existingTagPriority.toString())
-				.onChange(async (value) => {
-					this.plugin.settings.existingTagPriority = parseInt(value, 10);
-					await this.plugin.saveSettings();
+			.setName('Tag All Pebbles')
+			.setDesc("Only click me if you really want me to tag every single one of your notes! It might take a while...")
+			.addButton(button => button
+				.setButtonText('Apply and Update')
+				.onClick(() => {
+					this.plugin.tagAllNotes();
 				}));
+
+		// ---- Tagging options section ----
+		containerEl.createEl('h2', { text: 'Tagging Options' });
+		containerEl.createEl('p', {
+			text: 'These settings control how I generate tags for your notes.',
+			cls: 'setting-item-description',
+		});
 
 		new Setting(containerEl)
 			.setName('Automatic Tagging')
@@ -99,12 +107,13 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Use ISO Stop Words')
-			.setDesc('Words to ignore when I look for the interesting bits!')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.useIsoStopWords)
+			.setName('Existing Tag Priority')
+			.setDesc('How much more weight should I give to existing tags? (1 = no boost, 5 = default boost)')
+			.addText(text => text
+				.setPlaceholder('Enter the priority')
+				.setValue(this.plugin.settings.existingTagPriority.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.useIsoStopWords = value;
+					this.plugin.settings.existingTagPriority = parseInt(value, 10);
 					await this.plugin.saveSettings();
 				}));
 
@@ -267,24 +276,5 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}));
 		}
-
-		// ---- Actions section ----
-		new Setting(containerEl)
-			.setName('Rebuild Pebble Collection')
-			.setDesc("Click here to have me re-organize my pebble collection (the index). It might take a moment!")
-			.addButton(button => button
-				.setButtonText('Rebuild')
-				.onClick(() => {
-					this.plugin.rebuildCortex();
-				}));
-
-		new Setting(containerEl)
-			.setName('Tag All Pebbles')
-			.setDesc("Only click me if you really want me to tag every single one of your notes! It might take a while...")
-			.addButton(button => button
-				.setButtonText('Apply and Update')
-				.onClick(() => {
-					this.plugin.tagAllNotes();
-				}));
 	}
 }
