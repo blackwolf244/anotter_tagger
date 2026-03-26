@@ -1,49 +1,11 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import TfidfTagger from './main';
-import { fetchModels } from './OllamaClient';
-
-export interface TfidfTaggerSettings {
-	cortexSource: 'vault' | 'folder';
-	cortexFolderPath: string;
-	numTags: number;
-	useIsoStopWords: boolean;
-	customStopWords: string;
-	stopWords: string;
-	languages: string; // Comma-separated ISO language codes for stopwords
-	automaticTagging: boolean;
-	prioritizeExistingTags: boolean;
-	existingTagPriority: number;
-	// Ollama provider settings
-	ollamaEnabled: boolean;
-	ollamaServerUrl: string;
-	ollamaModel: string;
-	ollamaTemperature: number;
-	ollamaCustomPrompt: string;
-}
-
-export const DEFAULT_SETTINGS: TfidfTaggerSettings = {
-	cortexSource: 'vault',
-	cortexFolderPath: '',
-	numTags: 5,
-	useIsoStopWords: true,
-	customStopWords: '',
-	stopWords: "a,able,about,across,after,all,almost,also,am,among,an,and,any,are,as,at,be,because,been,but,by,can,cannot,could,dear,did,do,does,either,else,ever,every,for,from,get,got,had,has,have,he,her,hers,him,his,how,however,i,if,in,into,is,it,its,just,least,let,like,likely,may,me,might,most,must,my,neither,no,nor,not,of,off,often,on,only,or,other,our,own,rather,said,say,says,she,should,since,so,some,than,that,the,their,them,then,there,these,they,this,tis,to,too,twas,us,wants,was,we,were,what,when,where,which,while,who,whom,why,will,with,would,yet,you,your",
-	languages: 'en,de,fr', // Default to English
-	automaticTagging: true,
-	prioritizeExistingTags: true,
-	existingTagPriority: 5,
-	// Ollama defaults
-	ollamaEnabled: false,
-	ollamaServerUrl: 'http://localhost:11434',
-	ollamaModel: '',
-	ollamaTemperature: 0.3,
-	ollamaCustomPrompt: '',
-};
+import MyPlugin from '../main';
+import { fetchModels } from '../providers/ollama/OllamaClient';
 
 export class TfidfTaggerSettingTab extends PluginSettingTab {
-	plugin: TfidfTagger;
+	plugin: MyPlugin;
 
-	constructor(app: App, plugin: TfidfTagger) {
+	constructor(app: App, plugin: MyPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -97,12 +59,49 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 		});
 
 		new Setting(containerEl)
+			.setName('Primary Provider')
+			.setDesc('Which provider should I try first?')
+			.addDropdown(dropdown => dropdown
+				.addOption('tfidf', 'TF-IDF (Local)')
+				.addOption('ollama', 'Ollama (LLM)')
+				.setValue(this.plugin.settings.primaryProvider)
+				.onChange(async (value) => {
+					this.plugin.settings.primaryProvider = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+
+		new Setting(containerEl)
+			.setName('Secondary Provider')
+			.setDesc('Which provider should I use if the primary one is not available?')
+			.addDropdown(dropdown => dropdown
+				.addOption('none', 'None')
+				.addOption('tfidf', 'TF-IDF (Local)')
+				.addOption('ollama', 'Ollama (LLM)')
+				.setValue(this.plugin.settings.secondaryProvider)
+				.onChange(async (value) => {
+					this.plugin.settings.secondaryProvider = value;
+					await this.plugin.saveSettings();
+					this.display();
+				}));
+
+		new Setting(containerEl)
 			.setName('Automatic Tagging')
 			.setDesc('Should I automatically tag notes on save?')
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.automaticTagging)
 				.onChange(async (value) => {
 					this.plugin.settings.automaticTagging = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Provider Logging')
+			.setDesc('Log which provider was used and what tags it returned to the console (useful for debugging).')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.providerLogging)
+				.onChange(async (value) => {
+					this.plugin.settings.providerLogging = value;
 					await this.plugin.saveSettings();
 				}));
 
@@ -187,18 +186,7 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 			cls: 'setting-item-description',
 		});
 
-		new Setting(containerEl)
-			.setName('Enable Ollama')
-			.setDesc('Use Ollama as the primary tag provider (falls back to TF-IDF on failure).')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.ollamaEnabled)
-				.onChange(async (value) => {
-					this.plugin.settings.ollamaEnabled = value;
-					await this.plugin.saveSettings();
-					this.display(); // re-render to show/hide Ollama settings
-				}));
-
-		if (this.plugin.settings.ollamaEnabled) {
+		if (this.plugin.settings.primaryProvider === 'ollama' || this.plugin.settings.secondaryProvider === 'ollama') {
 			new Setting(containerEl)
 				.setName('Server URL')
 				.setDesc('Base URL of the Ollama server.')
