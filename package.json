@@ -1,19 +1,33 @@
 {
 	"name": "anotter-tagger",
 	"version": "1.0.12",
-	"description": "Automatically tags notes using TF-IDF.",
+	"description": "Automatically tags notes using TF-IDF keyword extraction or local AI via Ollama.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
-	"keywords": [],
-	"author": "",
+	"keywords": [
+		"obsidian",
+		"plugin",
+		"tags",
+		"tfidf",
+		"ollama",
+		"ai"
+	],
+	"author": "blackwolf244",
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/blackwolf244/anotter_tagger"
+	},
+	"bugs": {
+		"url": "https://github.com/blackwolf244/anotter_tagger/issues"
+	},
+	"homepage": "https://github.com/blackwolf244/anotter_tagger#readme",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
-		"@types/pdf-parse": "^1.1.5",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
 		"builtin-modules": "3.3.0",
@@ -21,8 +35,5 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
-	},
-	"dependencies": {
-		"pdf-parse": "^1.1.1"
 	}
 }

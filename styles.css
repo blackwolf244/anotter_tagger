@@ -1,8 +1,7 @@
-/*
+/* Anotter Tagger styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+.otter-quote {
+	font-style: italic;
+	opacity: 0.8;
+	margin-bottom: 1em;
+}

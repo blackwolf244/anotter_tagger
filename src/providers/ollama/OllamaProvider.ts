@@ -5,6 +5,8 @@
 import { TFile, App } from 'obsidian';
 import { TaggerProvider } from '../../core/Types';
 import { generate, isReachable } from './OllamaClient';
+import { getVaultTags } from '../../utils/vault-utils';
+import { TfidfTaggerSettings } from '../../settings';
 
 const DEFAULT_SYSTEM_PROMPT =
 	`You are a note tagging assistant. Given the following note content and a list of ` +
@@ -18,14 +20,6 @@ const DEFAULT_SYSTEM_PROMPT =
 /** Maximum characters of note content sent in the prompt. */
 const MAX_CONTENT_LENGTH = 4000;
 
-export interface OllamaSettings {
-	ollamaServerUrl: string;
-	ollamaModel: string;
-	ollamaTemperature: number;
-	ollamaCustomPrompt: string;
-	numTags: number;
-}
-
 export class OllamaProvider implements TaggerProvider {
 	id = 'ollama';
 	name = 'Ollama (LLM)';
@@ -36,7 +30,7 @@ export class OllamaProvider implements TaggerProvider {
 
 	constructor(
 		private app: App,
-		private settings: OllamaSettings
+		private settings: TfidfTaggerSettings
 	) { }
 
 	async generateTags(file: TFile): Promise<string[] | null> {
@@ -54,8 +48,7 @@ export class OllamaProvider implements TaggerProvider {
 	}
 
 	private getExistingVaultTags(): string[] {
-		const tagsWithCounts: Record<string, number> =
-			(this.app.metadataCache as any).getTags() ?? {};
+		const tagsWithCounts = getVaultTags(this.app);
 		return Object.keys(tagsWithCounts).map(t => t.replace(/^#/, '').toLowerCase());
 	}
 

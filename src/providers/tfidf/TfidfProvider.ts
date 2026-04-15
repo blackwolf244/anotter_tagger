@@ -5,15 +5,8 @@
 import { TFile, App, Notice } from 'obsidian';
 import { TaggerProvider } from '../../core/Types';
 import { TfIdfCore } from './TfIdfCore';
-
-export interface TfidfSettings {
-	stopWords: string;
-	numTags: number;
-	prioritizeExistingTags: boolean;
-	existingTagPriority: number;
-	includeFolders: string;
-	excludeFolders: string;
-}
+import { getVaultTags } from '../../utils/vault-utils';
+import { TfidfTaggerSettings } from '../../settings';
 
 export class TfidfProvider implements TaggerProvider {
 	id = 'tfidf';
@@ -27,7 +20,7 @@ export class TfidfProvider implements TaggerProvider {
 
 	constructor(
 		private app: App,
-		private settings: TfidfSettings
+		private settings: TfidfTaggerSettings
 	) {
 		this.tfidfCore = new TfIdfCore();
 	}
@@ -61,7 +54,7 @@ export class TfidfProvider implements TaggerProvider {
 		}
 
 		if (this.settings.prioritizeExistingTags) {
-			const existingTagsWithCounts: Record<string, number> = (this.app.metadataCache as any).getTags() ?? {};
+			const existingTagsWithCounts = getVaultTags(this.app);
 			const existingTags = Object.keys(existingTagsWithCounts).map(tag => tag.replace(/^#/, ''));
 
 			terms.forEach(term => {
@@ -100,14 +93,17 @@ export class TfidfProvider implements TaggerProvider {
 
 	private async getCortexFiles(): Promise<TFile[]> {
 		const files = this.app.vault.getMarkdownFiles();
-		const includeFolders = this.settings.includeFolders.split(',').map(f => f.trim()).filter(f => f !== "");
-		const excludeFolders = this.settings.excludeFolders.split(',').map(f => f.trim()).filter(f => f !== "");
+		const includeFolderPath = this.settings.cortexSource === 'folder'
+			? this.settings.cortexFolderPath.trim()
+			: '';
+		const includeFolders = includeFolderPath
+			? includeFolderPath.split(',').map(f => f.trim()).filter(f => f !== '')
+			: [];
 
 		return files.filter(file => {
 			const path = file.path;
 			const isIncluded = includeFolders.length === 0 || includeFolders.some(folder => path.startsWith(folder));
-			const isExcluded = excludeFolders.some(folder => path.startsWith(folder));
-			return isIncluded && !isExcluded;
+			return isIncluded;
 		});
 	}
 }

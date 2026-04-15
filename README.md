@@ -4,6 +4,27 @@ Anotter Tagger is an Obsidian plugin to automatically tag notes. It analyzes not
 
 The plugin offers two tagging engines, TF-IDF and local AI via Ollama, to provide flexible and accurate tag generation.
 
+## Installation
+
+### From the Community Plugin Browser
+
+1. Open **Settings -> Community plugins** in Obsidian.
+2. Select **Browse** and search for **Anotter Tagger**.
+3. Select **Install**, then **Enable**.
+
+### Manual Installation
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/blackwolf244/anotter_tagger/releases/latest).
+2. Create a folder called `tf-idf-tagger` inside your vault's `.obsidian/plugins/` directory.
+3. Copy the downloaded files into that folder.
+4. Reload Obsidian and enable the plugin in **Settings -> Community plugins**.
+
+### Using BRAT (for Beta Testing)
+
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+2. In BRAT settings, select **Add Beta plugin** and enter `blackwolf244/anotter_tagger`.
+3. Enable the plugin in **Settings -> Community plugins**.
+
 ## Features
 
 - **Automatic Tagging**: Automatically applies tags when a note is saved.
@@ -58,6 +79,14 @@ The plugin's behavior can be configured through the settings panel.
 - **Tag All Notes**: Iterates through and tags all notes in your vault.
 - **Tag Active Note**: Tags the currently open note.
 - You can also **right-click on a file** in the file explorer and select "Tag Note" from the context menu.
+
+## Contributing
+
+Contributions are welcome! Please see the [Contributing Guide](CONTRIBUTING.md) for details.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 

@@ -11,10 +11,10 @@ interface StopwordsMap {
 }
 const stopwords: StopwordsMap = stopwordsJson as unknown as StopwordsMap;
 
-export default class TfidfTagger extends Plugin {
-	settings: TfidfTaggerSettings;
-	tagManager: TagManager;
-	private debounceTimer: NodeJS.Timeout;
+export default class AnotterTagger extends Plugin {
+	settings!: TfidfTaggerSettings;
+	tagManager!: TagManager;
+	private debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async onload() {
 		await this.loadSettings();
@@ -22,26 +22,7 @@ export default class TfidfTagger extends Plugin {
 
 		this.tagManager = new TagManager(this.app);
 
-		// Register providers
-		const ollamaProvider = new OllamaProvider(this.app, {
-			ollamaServerUrl: this.settings.ollamaServerUrl,
-			ollamaModel: this.settings.ollamaModel,
-			ollamaTemperature: this.settings.ollamaTemperature,
-			ollamaCustomPrompt: this.settings.ollamaCustomPrompt,
-			numTags: this.settings.numTags
-		});
-
-		const tfidfProvider = new TfidfProvider(this.app, {
-			stopWords: this.settings.stopWords,
-			numTags: this.settings.numTags,
-			prioritizeExistingTags: this.settings.prioritizeExistingTags,
-			existingTagPriority: this.settings.existingTagPriority,
-			includeFolders: this.settings.cortexSource === 'folder' ? this.settings.cortexFolderPath : '',
-			excludeFolders: ''
-		});
-
-		this.tagManager.registerProvider(ollamaProvider);
-		this.tagManager.registerProvider(tfidfProvider);
+		this.registerProviders();
 
 		this.addSettingTab(new TfidfTaggerSettingTab(this.app, this));
 
@@ -67,14 +48,14 @@ export default class TfidfTagger extends Plugin {
 			callback: async () => {
 				const activeFile = this.app.workspace.getActiveFile();
 				if (activeFile) {
-					new Notice("🦦 Tagging this note for you!");
+					new Notice("Tagging this note for you!");
 					await this.tagManager.tagNote(activeFile, {
 						primaryProviderId: this.settings.primaryProvider,
 						secondaryProviderId: this.settings.secondaryProvider,
 						providerLogging: this.settings.providerLogging
 					});
 				} else {
-					new Notice("🦦 Please select a note to tag!");
+					new Notice("Please select a note to tag!");
 				}
 			},
 		});
@@ -101,8 +82,11 @@ export default class TfidfTagger extends Plugin {
 		this.registerEvent(
 			this.app.vault.on('modify', (file) => {
 				if (this.settings.automaticTagging && file instanceof TFile) {
-					clearTimeout(this.debounceTimer);
+					if (this.debounceTimer !== null) {
+						clearTimeout(this.debounceTimer);
+					}
 					this.debounceTimer = setTimeout(() => {
+						this.debounceTimer = null;
 						this.tagManager.tagNote(file, {
 							primaryProviderId: this.settings.primaryProvider,
 							secondaryProviderId: this.settings.secondaryProvider,
@@ -114,21 +98,44 @@ export default class TfidfTagger extends Plugin {
 		);
 	}
 
+	onunload() {
+		if (this.debounceTimer !== null) {
+			clearTimeout(this.debounceTimer);
+			this.debounceTimer = null;
+		}
+	}
+
+	/**
+	 * Creates and registers all tag providers with the TagManager.
+	 * Provider instances hold a reference to this.settings so they
+	 * always read current values without needing to be recreated.
+	 */
+	private registerProviders() {
+		const ollamaProvider = new OllamaProvider(this.app, this.settings);
+		const tfidfProvider = new TfidfProvider(this.app, this.settings);
+
+		this.tagManager.registerProvider(ollamaProvider);
+		this.tagManager.registerProvider(tfidfProvider);
+	}
+
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-		// Migrate old settings if necessary
+
+		// One-time migration: convert old ollamaEnabled boolean to new provider system
 		if (this.settings.ollamaEnabled && this.settings.primaryProvider === 'tfidf') {
 			this.settings.primaryProvider = 'ollama';
 			this.settings.secondaryProvider = 'tfidf';
+			this.settings.ollamaEnabled = false;
+			await this.saveData(this.settings);
 		}
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
 		this.updateStopWords();
-		// Update provider settings (they hold references to settings parts or we need to recreate them)
-		// For simplicity, let's just re-initialize providers or update their settings if they were references.
-		// Since I passed objects, I should probably just update those objects or re-run setup.
+		// Providers hold a reference to this.settings, so they pick up
+		// changes automatically. We just need to rebuild the TF-IDF index
+		// since stopwords or scope may have changed.
 		this.rebuildCortex(true);
 	}
 
@@ -137,7 +144,7 @@ export default class TfidfTagger extends Plugin {
 			.split(',')
 			.map(l => l.trim().toLowerCase())
 			.filter(Boolean);
-		let isoStopWords: string[] = [];
+		const isoStopWords: string[] = [];
 		if (this.settings.useIsoStopWords) {
 			for (const lang of langs) {
 				const words = stopwords[lang] || [];
