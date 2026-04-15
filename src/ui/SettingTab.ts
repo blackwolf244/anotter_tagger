@@ -107,14 +107,14 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Existing Tag Priority')
-			.setDesc('How much more weight should I give to existing tags? (1 = no boost, 5 = default boost)')
+			.setDesc('How much more weight should I give to existing tags? (1-100, where 1 = no boost, 5 = default boost)')
 			.addText(text => text
 				.setPlaceholder('Enter the priority')
 				.setValue(this.plugin.settings.existingTagPriority.toString())
 				.onChange(async (value) => {
 					const num = parseInt(value, 10);
-					if (!isNaN(num) && num >= 1 && num <= 100) {
-						this.plugin.settings.existingTagPriority = num;
+					if (!isNaN(num)) {
+						this.plugin.settings.existingTagPriority = Math.max(1, Math.min(100, num));
 						await this.plugin.saveSettings();
 					}
 				}));
@@ -142,8 +142,8 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.numTags.toString())
 				.onChange(async (value) => {
 					const num = parseInt(value, 10);
-					if (!isNaN(num) && num >= 1 && num <= 20) {
-						this.plugin.settings.numTags = num;
+					if (!isNaN(num)) {
+						this.plugin.settings.numTags = Math.max(1, Math.min(20, num));
 						await this.plugin.saveSettings();
 					}
 				}));
