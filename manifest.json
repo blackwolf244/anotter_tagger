@@ -3,9 +3,9 @@
 	"name": "Anotter Tagger",
 	"version": "1.0.12",
 	"minAppVersion": "0.15.0",
-	"description": "Automatically tags notes using TF-IDF.",
-	"author": "Your Name",
-	"authorUrl": "",
+	"description": "Automatically tags notes using TF-IDF keyword extraction or local AI via Ollama.",
+	"author": "blackwolf244",
+	"authorUrl": "https://github.com/blackwolf244",
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }

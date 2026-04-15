@@ -1,11 +1,11 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from '../main';
+import AnotterTagger from '../main';
 import { fetchModels } from '../providers/ollama/OllamaClient';
 
 export class TfidfTaggerSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: AnotterTagger;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: AnotterTagger) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -112,8 +112,11 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 				.setPlaceholder('Enter the priority')
 				.setValue(this.plugin.settings.existingTagPriority.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.existingTagPriority = parseInt(value, 10);
-					await this.plugin.saveSettings();
+					const num = parseInt(value, 10);
+					if (!isNaN(num) && num >= 1 && num <= 100) {
+						this.plugin.settings.existingTagPriority = num;
+						await this.plugin.saveSettings();
+					}
 				}));
 
 		new Setting(containerEl)
@@ -133,13 +136,16 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Number of Tags')
-			.setDesc("How many tags should I fetch for you?")
+			.setDesc("How many tags should I fetch for you? (1-20)")
 			.addText(text => text
 				.setPlaceholder('Enter the number of tags')
 				.setValue(this.plugin.settings.numTags.toString())
 				.onChange(async (value) => {
-					this.plugin.settings.numTags = parseInt(value, 10);
-					await this.plugin.saveSettings();
+					const num = parseInt(value, 10);
+					if (!isNaN(num) && num >= 1 && num <= 20) {
+						this.plugin.settings.numTags = num;
+						await this.plugin.saveSettings();
+					}
 				}));
 
 		new Setting(containerEl)
@@ -155,13 +161,13 @@ export class TfidfTaggerSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Reference Source')
-			.setDesc('I can read .md and .txt files. If i should focus on a specific folder, just let me know!')
+			.setDesc('I can read .md and .txt files. If I should focus on a specific folder, just let me know!')
 			.addDropdown(dropdown => dropdown
 				.addOption('vault', 'Entire Vault')
 				.addOption('folder', 'Specific Folder')
 				.setValue(this.plugin.settings.cortexSource)
-				.onChange(async (value: 'vault' | 'folder') => {
-					this.plugin.settings.cortexSource = value;
+				.onChange(async (value: string) => {
+					this.plugin.settings.cortexSource = value as 'vault' | 'folder';
 					await this.plugin.saveSettings();
 					this.display();
 				}));
