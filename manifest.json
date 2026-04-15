@@ -1,5 +1,5 @@
 {
-	"id": "tf-idf-tagger",
+	"id": "anotter-tagger",
 	"name": "Anotter Tagger",
 	"version": "1.0.12",
 	"minAppVersion": "0.15.0",
