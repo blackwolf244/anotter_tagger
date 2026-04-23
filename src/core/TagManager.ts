@@ -81,22 +81,24 @@ export class TagManager {
 		let success = 0;
 		let failed = 0;
 
-		for (let i = 0; i < files.length; i++) {
-			progressNotice.setMessage(`Tagging notes: ${i + 1} / ${total}`);
-			const tagged = await this.tagNote(files[i], options);
-			if (tagged) {
-				success++;
-			} else {
-				failed++;
+		try {
+			for (let i = 0; i < files.length; i++) {
+				progressNotice.setMessage(`Tagging notes: ${i + 1} / ${total}`);
+				const tagged = await this.tagNote(files[i], options);
+				if (tagged) {
+					success++;
+				} else {
+					failed++;
+				}
 			}
+
+			const summary = failed > 0
+				? `Tagging complete: ${success} tagged, ${failed} failed out of ${total} notes`
+				: `Tagging complete: ${success} notes tagged successfully!`;
+			new Notice(summary);
+		} finally {
+			progressNotice.hide();
 		}
-
-		progressNotice.hide();
-
-		const summary = failed > 0
-			? `Tagging complete: ${success} tagged, ${failed} failed out of ${total} notes`
-			: `Tagging complete: ${success} notes tagged successfully!`;
-		new Notice(summary);
 	}
 
 	private async writeTags(file: TFile, tags: string[]): Promise<void> {
