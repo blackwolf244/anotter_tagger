@@ -21,7 +21,7 @@ export class TagManager {
 		primaryProviderId: string,
 		secondaryProviderId?: string,
 		providerLogging?: boolean
-	}): Promise<void> {
+	}): Promise<boolean> {
 		const { primaryProviderId, secondaryProviderId, providerLogging } = options;
 
 		let tags: string[] | null = null;
@@ -54,10 +54,12 @@ export class TagManager {
 				console.log(`[Provider Logging] Provider: ${providerUsed}, Tags: ${tags.join(', ')}`);
 			}
 			await this.writeTags(file, tags);
+			return true;
 		} else {
 			console.log(`Failed to generate any tags for ${file.path}. Providers used: ${primaryProviderId}, ${secondaryProviderId}`);
 			// Only show notice if it's a manual action or something significant. 
 			// For automatic tagging it might be annoying if it fails often.
+			return false;
 		}
 	}
 
@@ -67,13 +69,34 @@ export class TagManager {
 		providerLogging?: boolean
 	}): Promise<void> {
 		const files = this.app.vault.getMarkdownFiles();
-		new Notice(`Tagging ${files.length} notes...`);
+		const total = files.length;
 
-		for (const file of files) {
-			await this.tagNote(file, options);
+		if (total === 0) {
+			new Notice('No markdown files found to tag.');
+			return;
 		}
 
-		new Notice('Batch tagging complete!');
+		// Duration 0 = persistent until we hide it
+		const progressNotice = new Notice('', 0);
+		let success = 0;
+		let failed = 0;
+
+		for (let i = 0; i < files.length; i++) {
+			progressNotice.setMessage(`Tagging notes: ${i + 1} / ${total}`);
+			const tagged = await this.tagNote(files[i], options);
+			if (tagged) {
+				success++;
+			} else {
+				failed++;
+			}
+		}
+
+		progressNotice.hide();
+
+		const summary = failed > 0
+			? `Tagging complete: ${success} tagged, ${failed} failed out of ${total} notes`
+			: `Tagging complete: ${success} notes tagged successfully!`;
+		new Notice(summary);
 	}
 
 	private async writeTags(file: TFile, tags: string[]): Promise<void> {
