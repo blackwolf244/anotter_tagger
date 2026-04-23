@@ -84,10 +84,15 @@ export class TagManager {
 		try {
 			for (let i = 0; i < files.length; i++) {
 				progressNotice.setMessage(`Tagging notes: ${i + 1} / ${total}`);
-				const tagged = await this.tagNote(files[i], options);
-				if (tagged) {
-					success++;
-				} else {
+				try {
+					const tagged = await this.tagNote(files[i], options);
+					if (tagged) {
+						success++;
+					} else {
+						failed++;
+					}
+				} catch (e) {
+					console.error(`Error tagging ${files[i].path}:`, e);
 					failed++;
 				}
 			}
